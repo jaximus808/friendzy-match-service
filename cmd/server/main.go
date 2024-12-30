@@ -1,38 +1,39 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
-	"net"
+	"os"
 
-	"github.com/jaximus808/friendzy-match-service/internal/service"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Initialize Supabase client
-	supabase, err := db.NewSupabaseClient()
+	projectURL := os.Getenv("SUPABASE_URL")
+	db, err := sql.Open("postgres", projectURL)
 	if err != nil {
-		log.Fatalf("Failed to initialize Supabase: %v", err)
+		fmt.Println("Error opening database:", err)
+		return
 	}
-
-	// Create service instance
-	svc := service.NewService(supabase)
-
-	// Initialize gRPC server
-	lis, err := net.Listen("tcp", ":50051")
+	defer db.Close()
+	// fmt.Print(projectURL)
+	// rows, err := db.Query("SELECT * FROM users")
+	// if err != nil {
+	// 	fmt.Print(err)
+	// 	log.Fatal("Error loading qeurerying")
+	// }
+	// fmt.Print(rows)
+	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		log.Fatal("Error connecting to database:", err)
 	}
+	fmt.Print("passed!")
 
-	s := grpc.NewServer()
-	pb.RegisterServiceServer(s, svc)
-
-	log.Printf("Server listening on :50051")
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
 }
